@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e2a47">
+<title>Kartenreise · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root{--navy:#0e2a47;--navy2:#0a2038;--paper:#f4ecd8;--ink:#16283d;--muted:#8a8069;
+        --stamp:#b5372b;--gold:#b9922e;--line:#26415f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--navy);color:var(--paper);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       min-height:100dvh;padding:20px 14px calc(20px + env(safe-area-inset-bottom))}
+  .wrap{max-width:760px;margin:0 auto}
+  .kopf{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+  h1{font-family:"Oswald",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:26px}
+  h1 span{color:var(--gold)}
+  .refresh{font-family:"Space Mono",monospace;font-size:12px;background:var(--stamp);color:#fff;
+           border:none;border-radius:7px;padding:8px 12px;cursor:pointer}
+
+  /* Login */
+  .login{display:none;background:#12314f;border:1px solid var(--line);border-radius:12px;padding:22px}
+  .login label{display:block;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.15em;
+               text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .login input{width:100%;font-size:16px;padding:12px;border-radius:9px;border:1px solid var(--line);
+               background:#0c2540;color:var(--paper);outline:none}
+  .login button{margin-top:12px;width:100%;font-family:"Oswald",sans-serif;text-transform:uppercase;
+                letter-spacing:.05em;font-size:18px;background:var(--stamp);color:#fff;border:none;
+                border-radius:9px;padding:12px;cursor:pointer}
+  .login .err{color:#ff9a8f;font-size:13px;margin-top:10px;min-height:1em}
+
+  /* Statistik-Kacheln */
+  .kacheln{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .kachel{background:#12314f;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .kachel .z{font-family:"Oswald",sans-serif;font-size:28px;line-height:1;color:var(--gold)}
+  .kachel .l{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+  #map{height:340px;border-radius:12px;border:1px solid var(--line);margin-bottom:16px;z-index:0}
+  .leaflet-container{background:#dfe6ea;font-family:inherit}
+  .dot{width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;
+       justify-content:center;font-family:"Oswald",sans-serif;font-weight:700;font-size:11px;color:#fff;
+       box-shadow:0 1px 3px rgba(0,0,0,.5)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  td.num{font-family:"Space Mono",monospace;text-align:right}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+  .cardname{font-family:"Space Mono",monospace}
+  .leer{text-align:center;color:var(--muted);padding:30px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kopf">
+    <h1>Kartenreise · <span>Admin</span></h1>
+    <button class="refresh" id="btnRefresh" style="display:none">↻ Aktualisieren</button>
+  </div>
+
+  <div class="login" id="login">
+    <label>Admin-Schlüssel</label>
+    <input type="password" id="keyInput" placeholder="Geheimer Schlüssel" autocomplete="off">
+    <button id="btnLogin">Öffnen</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="dash" style="display:none">
+    <div class="kacheln">
+      <div class="kachel"><div class="z" id="kCards">–</div><div class="l">Karten</div></div>
+      <div class="kachel"><div class="z" id="kStations">–</div><div class="l">Stationen</div></div>
+      <div class="kachel"><div class="z" id="kKm">–</div><div class="l">km gesamt</div></div>
+    </div>
+    <div id="map"></div>
+    <table>
+      <thead><tr><th>Karte</th><th class="num">Stat.</th><th class="num">km</th><th class="num">zuletzt</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="leer" id="leer" style="display:none">Noch keine Karte hat eine Station.</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ==== KONFIG: gleiche Worker-URL wie in index.html ==== */
+const BACKEND_URL = "";   // z.B. "https://kartenreise.dein-name.workers.dev"
+
+const $ = id => document.getElementById(id);
+const FARBEN = ["#b5372b","#2f6f4e","#b9922e","#3d6fb0","#8e44ad","#0f9e9e","#d35400","#c0397b"];
+let mapObj=null;
+function escHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+function kmDist(a,b){
+  const R=6371,dLa=(b[0]-a[0])*Math.PI/180,dLo=(b[1]-a[1])*Math.PI/180,
+        la1=a[0]*Math.PI/180,la2=b[0]*Math.PI/180;
+  const h=Math.sin(dLa/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function routeKm(hops){
+  let s=0;
+  for(let i=1;i<hops.length;i++) s+=kmDist([hops[i-1].lat,hops[i-1].lon],[hops[i].lat,hops[i].lon]);
+  return s;
+}
+
+async function ladeCards(key){
+  const r=await fetch(`${BACKEND_URL}/cards`,{headers:{"X-Admin-Key":key}});
+  if(r.status===403) throw new Error("unauthorized");
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return (await r.json()).cards||[];
+}
+
+function render(cards){
+  cards = cards.map(c=>({...c, hops:(c.hops||[]).slice().sort((a,b)=>a.ts-b.ts)}))
+               .filter(c=>c.hops.length>0);
+
+  const totalStations = cards.reduce((s,c)=>s+c.hops.length,0);
+  const totalKm = cards.reduce((s,c)=>s+routeKm(c.hops),0);
+  $("kCards").textContent = cards.length;
+  $("kStations").textContent = totalStations;
+  $("kKm").textContent = totalKm.toFixed(0);
+
+  // Karte
+  if(!mapObj){
+    mapObj=L.map("map",{scrollWheelZoom:false}).setView([30,10],2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      {subdomains:"abcd",maxZoom:19,attribution:"© OpenStreetMap · © CARTO"}).addTo(mapObj);
+  }
+  mapObj.eachLayer(l=>{ if(l instanceof L.Marker||l instanceof L.Polyline) mapObj.removeLayer(l); });
+
+  const alle=[];
+  cards.forEach((c,ci)=>{
+    const farbe=FARBEN[ci%FARBEN.length];
+    const pts=c.hops.map(h=>[h.lat,h.lon]);
+    alle.push(...pts);
+    if(pts.length>1) L.polyline(pts,{color:farbe,weight:2.5,opacity:.85,dashArray:"1 6"}).addTo(mapObj);
+    c.hops.forEach((h,i)=>{
+      const icon=L.divIcon({className:"",html:`<div class="dot" style="background:${farbe}">${i+1}</div>`,
+        iconSize:[22,22],iconAnchor:[11,11]});
+      L.marker([h.lat,h.lon],{icon}).addTo(mapObj)
+        .bindPopup(`<b>${escHtml(c.card)}</b> · Station ${i+1}<br>${escHtml([h.city,h.country].filter(Boolean).join(", "))}<br>${new Date(h.ts).toLocaleDateString("de-DE")}${h.tip?`<br><i>💬 ${escHtml(h.tip)}</i>`:""}`);
+    });
+  });
+  if(alle.length===1) mapObj.setView(alle[0],10);
+  else if(alle.length>1) mapObj.fitBounds(alle,{padding:[40,40]});
+  setTimeout(()=>mapObj.invalidateSize(),60);
+
+  // Tabelle (weiteste zuerst)
+  const rows=cards.map((c,ci)=>({...c,_km:routeKm(c.hops),_farbe:FARBEN[ci%FARBEN.length]}))
+                  .sort((a,b)=>b._km-a._km);
+  const tb=$("tbody"); tb.innerHTML="";
+  rows.forEach(c=>{
+    const last=c.hops[c.hops.length-1];
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><span class="swatch" style="background:${c._farbe}"></span><span class="cardname">${c.card}</span></td>
+      <td class="num">${c.hops.length}</td>
+      <td class="num">${c._km.toFixed(0)}</td>
+      <td class="num">${new Date(last.ts).toLocaleDateString("de-DE")}</td>`;
+    tb.appendChild(tr);
+  });
+  $("leer").style.display = cards.length? "none":"block";
+}
+
+async function start(key){
+  try{
+    const cards=await ladeCards(key);
+    localStorage.setItem("wk_admin_key",key);
+    $("login").style.display="none";
+    $("dash").style.display="block";
+    $("btnRefresh").style.display="inline-block";
+    render(cards);
+  }catch(e){
+    $("login").style.display="block";
+    $("dash").style.display="none";
+    $("loginErr").textContent = e.message==="unauthorized"
+      ? "Falscher Schlüssel." : "Fehler: "+e.message;
+    localStorage.removeItem("wk_admin_key");
+  }
+}
+
+$("btnLogin").addEventListener("click",()=>{
+  const k=$("keyInput").value.trim();
+  if(k) start(k);
+});
+$("keyInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnLogin").click(); });
+$("btnRefresh").addEventListener("click",()=>{
+  const k=localStorage.getItem("wk_admin_key"); if(k) start(k);
+});
+
+/* Auto-Login: ?key=… in URL, sonst gespeicherter Schlüssel */
+(function(){
+  if(!BACKEND_URL){ $("login").style.display="block"; $("loginErr").textContent="BACKEND_URL fehlt (oben im Script eintragen)."; return; }
+  const urlKey=new URLSearchParams(location.search).get("key");
+  const saved=localStorage.getItem("wk_admin_key");
+  if(urlKey) start(urlKey);
+  else if(saved) start(saved);
+  else $("login").style.display="block";
+})();
+</script>
+</body>
+</html>
