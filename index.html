@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e2a47">
+<title>Die Karte reist</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+<style>
+  /* ============================================================
+     DIE KARTE REIST — Reisepass-Ästhetik
+     Tinten-Navy · Alterspapier · Stempel-Rot · Zoll-Grün
+     ============================================================ */
+  :root{
+    --navy:#0e2a47; --navy2:#0a2038;
+    --paper:#f4ecd8; --paper2:#efe6cd;
+    --ink:#16283d; --muted:#6b6250;
+    --stamp:#b5372b; --customs:#2f6f4e; --gold:#b9922e;
+    --line:#c9bfa2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--navy);
+    background-image:radial-gradient(120% 80% at 50% -10%, #163a5e 0%, var(--navy) 55%, var(--navy2) 100%);
+    color:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+    padding:26px 16px calc(26px + env(safe-area-inset-bottom));
+  }
+  .wrap{width:100%; max-width:480px}
+  .mono{font-family:"Space Mono",ui-monospace,monospace}
+
+  /* ---------- Papierkarte ---------- */
+  .card{
+    background:var(--paper);
+    background-image:
+      radial-gradient(120% 60% at 100% 0%, rgba(0,0,0,.04), transparent 60%),
+      radial-gradient(100% 60% at 0% 100%, rgba(0,0,0,.05), transparent 55%);
+    color:var(--ink);
+    border-radius:12px;
+    box-shadow:0 18px 40px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.06);
+    padding:22px 20px;
+    position:relative; overflow:hidden;
+  }
+  .card::before{ /* perforierter Rand */
+    content:""; position:absolute; inset:8px; border:1.5px dashed var(--line);
+    border-radius:8px; pointer-events:none;
+  }
+  .inner{position:relative; z-index:1}
+
+  .eyebrow{
+    font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.28em;
+    text-transform:uppercase; color:var(--stamp); font-weight:700; margin-bottom:10px;
+  }
+  h1{
+    font-family:"Oswald",sans-serif; font-weight:700; line-height:1;
+    font-size:clamp(34px,10vw,48px); text-transform:uppercase; letter-spacing:.01em;
+    color:var(--ink);
+  }
+  h1 .rot{color:var(--stamp)}
+  .lead{margin-top:14px; font-size:15.5px; line-height:1.5; color:var(--ink)}
+  .lead b{color:var(--stamp)}
+
+  /* ---------- Eingangsstempel ---------- */
+  .stempel{
+    display:inline-block; margin:20px 0 6px; transform:rotate(-5deg);
+    border:3px solid var(--stamp); border-radius:8px; color:var(--stamp);
+    padding:8px 16px 6px; text-align:center;
+    box-shadow:0 0 0 3px rgba(181,55,43,.12);
+  }
+  .stempel .k{font-family:"Space Mono",monospace; font-size:10px; letter-spacing:.25em}
+  .stempel .n{font-family:"Oswald",sans-serif; font-weight:700; font-size:40px; line-height:.9; margin:2px 0}
+
+  .hr{height:1px; background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px); margin:20px 0}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:block; width:100%; text-align:center; cursor:pointer;
+    font-family:"Oswald",sans-serif; text-transform:uppercase; letter-spacing:.06em;
+    font-size:20px; font-weight:700; color:var(--paper);
+    background:var(--stamp); border:none; border-radius:10px; padding:14px;
+    box-shadow:0 4px 0 #7f271e; transition:transform .05s, box-shadow .05s;
+  }
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #7f271e}
+  .btn:disabled{opacity:.6; box-shadow:0 4px 0 #7f271e; cursor:wait}
+  .btn.gruen{background:var(--customs); box-shadow:0 4px 0 #1f4d36}
+  .btn.gruen:active{box-shadow:0 1px 0 #1f4d36}
+
+  .ghost{
+    display:block; width:100%; text-align:center; margin-top:12px; cursor:pointer;
+    background:none; border:none; color:var(--muted); font-size:13px;
+    text-decoration:underline; text-underline-offset:3px; font-family:inherit;
+  }
+
+  /* ---------- Formular ---------- */
+  label{
+    display:block; font-family:"Space Mono",monospace; font-size:11px; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 6px 2px;
+  }
+  input[type=text]{
+    width:100%; font-size:16px; font-family:inherit; color:var(--ink); background:#fffdf7;
+    border:1.5px solid var(--line); border-radius:9px; padding:12px; outline:none;
+  }
+  input[type=text]:focus{border-color:var(--stamp); box-shadow:0 0 0 3px rgba(181,55,43,.15)}
+  .feld{margin-bottom:16px}
+
+  .ortbox{
+    background:#fffdf7; border:1.5px solid var(--line); border-radius:9px;
+    padding:12px; display:flex; align-items:center; gap:10px;
+  }
+  .ortbox .pin{font-size:20px}
+  .ortbox .txt{flex:1; font-size:14px; color:var(--ink)}
+  .ortbox .txt small{display:block; color:var(--muted); font-family:"Space Mono",monospace; font-size:11px}
+  .ortbox button{
+    flex-shrink:0; font-family:"Space Mono",monospace; font-size:12px; font-weight:700;
+    background:var(--navy); color:var(--paper); border:none; border-radius:7px; padding:9px 11px; cursor:pointer;
+  }
+  .ortbox button:active{opacity:.8}
+
+  .check{display:flex; gap:10px; align-items:flex-start; margin-top:4px; cursor:pointer}
+  .check input{width:20px; height:20px; margin-top:1px; accent-color:var(--stamp); flex-shrink:0}
+  .check span{font-size:13.5px; line-height:1.4; color:var(--ink)}
+  .privat{display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line)}
+  .hinweis{font-size:12px; color:var(--muted); line-height:1.45; margin-top:10px}
+
+  .fehler{display:none; margin-top:12px; font-size:14px; font-weight:600; color:var(--stamp); text-align:center}
+
+  /* ---------- Reise / Karte ---------- */
+  #map{height:300px; border-radius:10px; border:1.5px solid var(--line); margin:4px 0 16px; z-index:0}
+  .leaflet-container{background:#e9e2cd; font-family:inherit}
+  .stationicon{
+    width:26px; height:26px; border-radius:50%; background:var(--stamp); color:#fff;
+    border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Oswald",sans-serif; font-weight:700; font-size:13px;
+  }
+  .stationicon.start{background:var(--customs)}
+
+  .timeline{list-style:none; margin-top:4px}
+  .timeline li{display:flex; gap:12px; padding:10px 0; border-bottom:1px dashed var(--line)}
+  .timeline li:last-child{border-bottom:none}
+  .tl-nr{
+    flex-shrink:0; width:34px; height:34px; border:2px solid var(--stamp); color:var(--stamp);
+    border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-family:"Oswald",sans-serif; font-weight:700; font-size:16px; transform:rotate(-4deg);
+  }
+  .tl-txt b{font-size:15px; color:var(--ink)}
+  .tl-txt small{display:block; font-family:"Space Mono",monospace; font-size:11px; color:var(--muted); margin-top:2px}
+
+  .weitergeben{
+    margin-top:18px; background:var(--navy); color:var(--paper); border-radius:10px; padding:16px;
+  }
+  .weitergeben .t{font-family:"Oswald",sans-serif; text-transform:uppercase; font-size:18px; letter-spacing:.04em; color:var(--gold)}
+  .weitergeben p{font-size:14px; line-height:1.5; margin-top:8px; color:#e7e0cd}
+  .weitergeben p b{color:#fff}
+
+  .fuss{margin-top:20px; text-align:center; font-size:11px; color:rgba(244,236,216,.55); line-height:1.55}
+
+  .demo{
+    display:none; text-align:center; font-family:"Space Mono",monospace; font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--gold);
+    border:1px dashed var(--gold); border-radius:8px; padding:8px; margin-bottom:16px;
+  }
+
+  .stat{
+    font-family:"Oswald",sans-serif; text-transform:uppercase; font-size:14px;
+    letter-spacing:.1em; color:var(--muted); margin:2px 2px 8px;
+  }
+  .stat b{color:var(--stamp)}
+
+  /* ---------- Tipp-Eingabe ---------- */
+  textarea{
+    width:100%; font-size:16px; font-family:inherit; color:var(--ink); background:#fffdf7;
+    border:1.5px solid var(--line); border-radius:9px; padding:12px; outline:none; resize:vertical; min-height:60px;
+  }
+  textarea:focus{border-color:var(--customs); box-shadow:0 0 0 3px rgba(47,111,78,.15)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+  .chip{
+    font-family:"Space Mono",monospace; font-size:12px; color:var(--customs);
+    background:#eef4ee; border:1px solid var(--customs); border-radius:20px;
+    padding:5px 10px; cursor:pointer;
+  }
+  .chip:active{background:var(--customs); color:#fff}
+  .chips .k{width:100%; font-size:11px; color:var(--muted); font-family:"Space Mono",monospace; letter-spacing:.08em}
+
+  /* ---------- Tipp in der Timeline ---------- */
+  .tl-tipp{
+    display:block; margin-top:7px; font-size:13.5px; line-height:1.4; color:var(--ink);
+    background:#eef4ee; border-left:3px solid var(--customs); border-radius:0 7px 7px 0;
+    padding:7px 10px;
+  }
+  .tl-tipp::before{content:"💬 "}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="demo" id="demo">⚠︎ Demo-Modus · kein Server verbunden · Daten nur lokal</div>
+
+  <div class="card"><div class="inner">
+
+    <!-- ========== 1) ONBOARDING ========== -->
+    <section id="view-start">
+      <div class="eyebrow">Reisepass der Karte</div>
+      <h1>Glückwunsch —<br><span class="rot">du bist dabei.</span></h1>
+      <div class="stempel">
+        <div class="k">Station Nº</div>
+        <div class="n" id="startNr">–</div>
+      </div>
+      <p class="lead">
+        Diese Karte ist auf Reisen. Jeder, der sie in die Hand bekommt, setzt <b>einen Punkt</b>
+        auf die Landkarte — und gibt sie dann weiter. So wächst mit jedem Menschen eine Linie
+        quer durch Städte, Länder, vielleicht die halbe Welt.
+      </p>
+      <div class="hr"></div>
+      <button class="btn" id="btnMitmachen">Meinen Punkt setzen</button>
+      <button class="ghost" id="btnNurSchauen">Nur die bisherige Reise ansehen</button>
+    </section>
+
+    <!-- ========== 2) FORMULAR ========== -->
+    <section id="view-form" style="display:none">
+      <div class="eyebrow">Deine Station</div>
+      <h1 style="font-size:clamp(28px,8vw,38px)">Wo bist du<br>gerade?</h1>
+      <p class="lead" style="margin-bottom:18px">
+        Für die Reise zählt nur <b>ein grober Ort</b> und das Datum. Mehr wird öffentlich nicht gezeigt.
+      </p>
+
+      <div class="feld">
+        <label>Dein Standort für die Karte</label>
+        <div class="ortbox">
+          <span class="pin" id="ortPin">📡</span>
+          <div class="txt" id="ortText">Wird ermittelt…<small id="ortSub">ca. 250 m genau</small></div>
+          <button type="button" id="btnGPS">📍 genauer</button>
+        </div>
+      </div>
+
+      <div class="feld">
+        <label>Dein Tipp für alle nach dir <span style="text-transform:none;letter-spacing:0">(optional, öffentlich)</span></label>
+        <textarea id="fTipp" maxlength="200" rows="2"
+          placeholder="z.B. „Die Pizza im Da Mario ist ein Traum" oder ein Gruß …"></textarea>
+        <div class="chips" id="naheChips"></div>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="chkVerraten">
+        <span>Der Besitzer der Karte darf wissen, wer ich bin. <b>Nur er</b> bekommt das per Push — es steht nirgends öffentlich.</span>
+      </label>
+
+      <div class="privat" id="privatFelder">
+        <div class="feld">
+          <label>Name</label>
+          <input type="text" id="fName" placeholder="Wie heißt du?" autocomplete="off">
+        </div>
+        <div class="feld" style="margin-bottom:0">
+          <label>Socials <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" id="fSocial" placeholder="@instagram, TikTok …" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <button class="btn gruen" id="btnEintragen">Eintragen & Reise ansehen</button>
+      <button class="ghost" id="btnZurueck">Abbrechen</button>
+      <div class="fehler" id="formFehler"></div>
+      <p class="hinweis">Kein Konto, kein Tracking. Für die öffentliche Reise wird dein Ort auf ~250 m gerundet gespeichert.</p>
+    </section>
+
+    <!-- ========== 3) REISE ========== -->
+    <section id="view-journey" style="display:none">
+      <div class="eyebrow">Die bisherige Reise</div>
+      <div class="stat" id="reiseStat"></div>
+      <div id="map"></div>
+      <ul class="timeline" id="timeline"></ul>
+
+      <div class="weitergeben" id="weitergebenBox">
+        <div class="t">Jetzt bist du dran</div>
+        <p>
+          Gib die Karte <b>weiter</b> — am liebsten an jemanden, den du <b>nicht</b> kennst.
+          Sag nur: „Scan das, trag dich ein, gib sie weiter." Je fremder die Hände, desto weiter reist sie.
+        </p>
+      </div>
+      <button class="ghost" id="btnReload" style="margin-top:16px">Reise aktualisieren</button>
+    </section>
+
+  </div></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ============================================================
+   KONFIGURATION — HIER ANPASSEN
+   ============================================================ */
+const CONFIG = {
+  // Cloudflare-Worker-URL (siehe SETUP.md). Leer lassen = Demo-Modus.
+  BACKEND_URL: "",                       // z.B. "https://kartenreise.dein-name.workers.dev"
+  // ntfy (nur für Push an DICH, wenn jemand sich zu erkennen gibt):
+  NTFY_TOPIC:  "kartenreise-HIER-AENDERN-x7k2q9",
+  NTFY_SERVER: "https://ntfy.sh",
+  // Karten-Mittelpunkt beim Start (bevor Punkte da sind):
+  MAP_START: [51.0, 10.0], MAP_ZOOM: 4
+};
+
+/* ---------- Karten-ID aus URL (?c=…) ---------- */
+const CARD = (new URLSearchParams(location.search).get("c") || "default")
+              .replace(/[^a-zA-Z0-9_-]/g,"").slice(0,40) || "default";
+const DEMO = !CONFIG.BACKEND_URL;
+const $ = id => document.getElementById(id);
+let meinOrt = null;         // {lat, lon, city, country}
+let mapObj = null;
+
+/* ============================================================
+   BACKEND
+   ============================================================ */
+async function ladeReise(){
+  if(DEMO){
+    try{ return JSON.parse(localStorage.getItem("wk_"+CARD)||"[]"); }catch{ return []; }
+  }
+  const r = await fetch(`${CONFIG.BACKEND_URL}/journey?c=${CARD}`);
+  if(!r.ok) throw new Error("GET "+r.status);
+  return (await r.json()).hops || [];
+}
+const GRID = 0.0025;   // ~250 m Raster (Privatsphäre)
+const raster = x => Number((Math.round(x/GRID)*GRID).toFixed(5));
+async function trageEin(ort, tipp){
+  tipp = (tipp||"").trim().slice(0,200);
+  if(DEMO){
+    const hops = await ladeReise();
+    hops.push({lat:raster(ort.lat), lon:raster(ort.lon),
+               city:ort.city, country:ort.country, tip:tipp, ts:Date.now()});
+    localStorage.setItem("wk_"+CARD, JSON.stringify(hops));
+    return hops;
+  }
+  const r = await fetch(`${CONFIG.BACKEND_URL}/journey?c=${CARD}`,{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({...ort, tip:tipp})
+  });
+  if(!r.ok){
+    if(r.status===429) throw new Error("Zu schnell — kurz warten und nochmal.");
+    throw new Error("POST "+r.status);
+  }
+  return (await r.json()).hops || [];
+}
+
+/* ============================================================
+   STANDORT
+   ============================================================ */
+async function ipGeo(){
+  // grobe Ortung, HTTPS, ohne Key — mit Fallback
+  try{
+    const r = await fetch("https://ipwho.is/");
+    const d = await r.json();
+    if(d && d.success && isFinite(d.latitude))
+      return {lat:d.latitude, lon:d.longitude, city:d.city||"", country:d.country||""};
+  }catch{}
+  try{
+    const r = await fetch("https://ipapi.co/json/");
+    const d = await r.json();
+    if(d && isFinite(d.latitude))
+      return {lat:d.latitude, lon:d.longitude, city:d.city||"", country:d.country_name||""};
+  }catch{}
+  return null;
+}
+function gpsPos(){
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation) return rej();
+    navigator.geolocation.getCurrentPosition(
+      p=>res({lat:p.coords.latitude, lon:p.coords.longitude}),
+      ()=>rej(), {enableHighAccuracy:false, timeout:9000}
+    );
+  });
+}
+async function reverseGeo(lat,lon){
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lon}`,
+                          {headers:{"Accept":"application/json"}});
+    const a = (await r.json()).address || {};
+    return {city:a.city||a.town||a.village||a.county||"", country:a.country||""};
+  }catch{ return null; }
+}
+function zeigeOrt(){
+  if(!meinOrt){
+    $("ortText").innerHTML = 'Ort nicht gefunden.<small>Tippe auf „genauer"</small>';
+    $("ortPin").textContent = "❓"; return;
+  }
+  const label = [meinOrt.city, meinOrt.country].filter(Boolean).join(", ") || "Unbekannter Ort";
+  $("ortPin").textContent = "📍";
+  $("ortText").innerHTML = `${label}<small>${meinOrt.lat.toFixed(2)}, ${meinOrt.lon.toFixed(2)}</small>`;
+}
+
+/* ============================================================
+   ntfy (nur an den Besitzer)
+   ============================================================ */
+async function pushAnBesitzer(name, social, ort){
+  const zeilen = [
+    "🗺️ Neue Station auf der Kartenreise!",
+    "",
+    name   ? "👤 Name: "+name : "👤 (kein Name)",
+    social ? "📱 Socials: "+social : null,
+    "📍 Ort: "+([ort.city,ort.country].filter(Boolean).join(", ")||"unbekannt"),
+  ].filter(z=>z!==null);
+  try{
+    await fetch(`${CONFIG.NTFY_SERVER}/${CONFIG.NTFY_TOPIC}`,{
+      method:"POST", body:zeilen.join("\n"),
+      headers:{"X-Title":"Kartenreise", "X-Tags":"round_pushpin"}
+    });
+  }catch{ /* Push ist optional, kein harter Fehler */ }
+}
+
+/* ============================================================
+   „IN DER NÄHE" — Vorschläge zum Antippen fürs Tipp-Feld
+   (OpenStreetMap Overpass, kein Key; rein optionale Hilfe)
+   ============================================================ */
+function escHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function meterDist(aLat,aLon,bLat,bLon){
+  const R=6371000, dLa=(bLat-aLat)*Math.PI/180, dLo=(bLon-aLon)*Math.PI/180,
+        la1=aLat*Math.PI/180, la2=bLat*Math.PI/180;
+  const h=Math.sin(dLa/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+async function naheOrteVorschlagen(ort){
+  const box=$("naheChips"); box.innerHTML="";
+  if(!ort || !isFinite(ort.lat)) return;
+
+  const q="[out:json][timeout:15];("
+    +`node(around:350,${ort.lat},${ort.lon})[amenity~"^(restaurant|cafe|bar|fast_food|pub|ice_cream|bakery)$"][name];`
+    +`node(around:350,${ort.lat},${ort.lon})[shop][name];`
+    +");out body 40;";
+  const ep=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+  let els=null;
+  for(const u of ep){
+    try{
+      const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q)});
+      if(!r.ok) continue;
+      els=(await r.json()).elements||[]; break;
+    }catch{}
+  }
+  if(!els || !els.length) return;
+
+  els.forEach(e=> e._d=meterDist(ort.lat,ort.lon,e.lat,e.lon));
+  els.sort((a,b)=>a._d-b._d);
+  const namen=[...new Set(els.map(e=>e.tags.name))].slice(0,4);
+  if(!namen.length) return;
+
+  box.innerHTML='<div class="k">In der Nähe — tippen zum Empfehlen:</div>';
+  namen.forEach(n=>{
+    const c=document.createElement("button");
+    c.type="button"; c.className="chip"; c.textContent=n;
+    c.addEventListener("click",()=>{
+      const f=$("fTipp");
+      f.value = f.value.trim()
+        ? f.value.replace(/\s*$/,"") + " — " + n
+        : n + " kann ich empfehlen!";
+      f.focus();
+    });
+    box.appendChild(c);
+  });
+}
+
+/* ============================================================
+   REISE ZEICHNEN
+   ============================================================ */
+function zeigeReise(hops){
+  wechsel("journey");
+  hops = (hops||[]).slice().sort((a,b)=>a.ts-b.ts);
+
+  $("reiseStat").innerHTML = hops.length
+    ? `<b>${hops.length}</b> ${hops.length===1?"Station":"Stationen"} bisher`
+    : "Noch keine Station — du wärst die erste.";
+
+  // Karte
+  if(!mapObj){
+    mapObj = L.map("map",{scrollWheelZoom:false}).setView(CONFIG.MAP_START, CONFIG.MAP_ZOOM);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+      subdomains:"abcd", maxZoom:19,
+      attribution:'© OpenStreetMap · © CARTO'
+    }).addTo(mapObj);
+  }
+  // alte Marker/Linien entfernen
+  mapObj.eachLayer(l=>{ if(l instanceof L.Marker || l instanceof L.Polyline) mapObj.removeLayer(l); });
+
+  const pts = hops.map(h=>[h.lat,h.lon]);
+  if(pts.length>1){
+    L.polyline(pts,{color:"#b5372b", weight:2.5, opacity:.85, dashArray:"1 7", lineCap:"round"}).addTo(mapObj);
+  }
+  hops.forEach((h,i)=>{
+    const icon = L.divIcon({
+      className:"", html:`<div class="stationicon ${i===0?"start":""}">${i+1}</div>`,
+      iconSize:[26,26], iconAnchor:[13,13]
+    });
+    const wann = new Date(h.ts).toLocaleDateString("de-DE");
+    const wo = [h.city,h.country].filter(Boolean).join(", ") || "Unbekannt";
+    const tippTxt = h.tip ? `<br><i>💬 ${escHtml(h.tip)}</i>` : "";
+    L.marker([h.lat,h.lon],{icon}).addTo(mapObj).bindPopup(`<b>Station ${i+1}</b><br>${wo}<br>${wann}${tippTxt}`);
+  });
+  if(pts.length===1) mapObj.setView(pts[0], 11);
+  else if(pts.length>1) mapObj.fitBounds(pts,{padding:[40,40]});
+
+  // Timeline (neueste oben)
+  const tl = $("timeline"); tl.innerHTML = "";
+  hops.slice().reverse().forEach((h,ri)=>{
+    const nr = hops.length - ri;
+    const wann = new Date(h.ts).toLocaleDateString("de-DE",{day:"2-digit",month:"long",year:"numeric"});
+    const wo = [h.city,h.country].filter(Boolean).join(", ") || "Unbekannter Ort";
+    const tippTxt = h.tip ? `<span class="tl-tipp">${escHtml(h.tip)}</span>` : "";
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="tl-nr">${nr}</div>
+      <div class="tl-txt"><b>${wo}</b><small>${wann}</small>${tippTxt}</div>`;
+    tl.appendChild(li);
+  });
+  setTimeout(()=>mapObj.invalidateSize(), 60);
+}
+
+/* ============================================================
+   ANSICHTEN
+   ============================================================ */
+function wechsel(v){
+  ["start","form","journey"].forEach(x=> $("view-"+x).style.display = (x===v?"block":"none"));
+  window.scrollTo({top:0});
+}
+
+/* ---------- Formular-Interaktionen ---------- */
+$("chkVerraten").addEventListener("change", e=>{
+  $("privatFelder").style.display = e.target.checked ? "block" : "none";
+});
+$("btnGPS").addEventListener("click", async ()=>{
+  $("btnGPS").textContent = "…";
+  try{
+    const g = await gpsPos();
+    const label = await reverseGeo(g.lat, g.lon);
+    meinOrt = {lat:g.lat, lon:g.lon,
+               city:(label&&label.city)||(meinOrt&&meinOrt.city)||"",
+               country:(label&&label.country)||(meinOrt&&meinOrt.country)||""};
+    if($("ortSub")) $("ortSub").textContent="";
+  }catch{ /* abgelehnt: grober Ort bleibt */ }
+  $("btnGPS").textContent = "📍 genauer";
+  zeigeOrt();
+  naheOrteVorschlagen(meinOrt);
+});
+
+$("btnMitmachen").addEventListener("click", async ()=>{
+  wechsel("form");
+  meinOrt = await ipGeo();
+  zeigeOrt();
+  naheOrteVorschlagen(meinOrt);
+});
+$("btnZurueck").addEventListener("click", ()=> wechsel("start"));
+$("btnNurSchauen").addEventListener("click", async ()=>{
+  try{ zeigeReise(await ladeReise()); }
+  catch(e){ alert("Reise konnte nicht geladen werden. ("+e.message+")"); }
+});
+$("btnReload").addEventListener("click", async ()=>{
+  try{ zeigeReise(await ladeReise()); }catch{}
+});
+
+$("btnEintragen").addEventListener("click", async ()=>{
+  const fehler = $("formFehler"); fehler.style.display="none";
+  if(!meinOrt || !isFinite(meinOrt.lat)){
+    fehler.textContent = "Ohne Ort keine Station — tippe auf „genauer\" oder erlaube den Standort.";
+    fehler.style.display="block"; return;
+  }
+  const btn = $("btnEintragen"); btn.disabled=true; btn.textContent="Wird eingetragen…";
+  try{
+    const hops = await trageEin(meinOrt, $("fTipp").value);
+    if($("chkVerraten").checked){
+      await pushAnBesitzer($("fName").value.trim(), $("fSocial").value.trim(), meinOrt);
+    }
+    try{ localStorage.setItem("wk_done_"+CARD,"1"); }catch{}
+    zeigeReise(hops);
+  }catch(e){
+    btn.disabled=false; btn.textContent="Eintragen & Reise ansehen";
+    fehler.textContent = "Hat nicht geklappt: "+e.message;
+    fehler.style.display="block";
+  }
+});
+
+/* ============================================================
+   START
+   ============================================================ */
+(async function init(){
+  if(DEMO) $("demo").style.display="block";
+  let hops = [];
+  try{ hops = await ladeReise(); }catch{ hops = []; }
+  $("startNr").textContent = hops.length + 1;
+
+  // schon eingetragen? -> direkt zur Reise
+  let done=false; try{ done = !!localStorage.getItem("wk_done_"+CARD); }catch{}
+  if(done) zeigeReise(hops);
+})();
+</script>
+</body>
+</html>
