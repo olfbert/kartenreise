@@ -54,6 +54,13 @@
   .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
   .cardname{font-family:"Space Mono",monospace}
   .leer{text-align:center;color:var(--muted);padding:30px 0}
+  .reset{font-family:"Space Mono",monospace;font-size:11px;background:none;color:#ff9a8f;
+         border:1px solid #7f271e;border-radius:6px;padding:5px 8px;cursor:pointer}
+  .reset:active{background:#7f271e;color:#fff}
+  .resetall{display:block;width:100%;margin-top:16px;font-family:"Oswald",sans-serif;text-transform:uppercase;
+            letter-spacing:.05em;font-size:15px;background:none;color:#ff9a8f;border:1px dashed #7f271e;
+            border-radius:9px;padding:11px;cursor:pointer}
+  .resetall:active{background:#7f271e;color:#fff}
 </style>
 </head>
 <body>
@@ -78,10 +85,11 @@
     </div>
     <div id="map"></div>
     <table>
-      <thead><tr><th>Karte</th><th class="num">Stat.</th><th class="num">km</th><th class="num">zuletzt</th></tr></thead>
+      <thead><tr><th>Karte</th><th class="num">Stat.</th><th class="num">km</th><th class="num">zuletzt</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="leer" id="leer" style="display:none">Noch keine Karte hat eine Station.</div>
+    <button id="btnResetAll" class="resetall">Alle Reisen zurücksetzen</button>
   </div>
 </div>
 
@@ -89,7 +97,7 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 /* ==== KONFIG: gleiche Worker-URL wie in index.html ==== */
-const BACKEND_URL = "";   // z.B. "https://kartenreise.dein-name.workers.dev"
+const BACKEND_URL = "https://olfbert.o36277822.workers.dev";   // dein Worker
 
 const $ = id => document.getElementById(id);
 const FARBEN = ["#b5372b","#2f6f4e","#b9922e","#3d6fb0","#8e44ad","#0f9e9e","#d35400","#c0397b"];
@@ -157,10 +165,11 @@ function render(cards){
   rows.forEach(c=>{
     const last=c.hops[c.hops.length-1];
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td><span class="swatch" style="background:${c._farbe}"></span><span class="cardname">${c.card}</span></td>
+    tr.innerHTML=`<td><span class="swatch" style="background:${c._farbe}"></span><span class="cardname">${escHtml(c.card)}</span></td>
       <td class="num">${c.hops.length}</td>
       <td class="num">${c._km.toFixed(0)}</td>
-      <td class="num">${new Date(last.ts).toLocaleDateString("de-DE")}</td>`;
+      <td class="num">${new Date(last.ts).toLocaleDateString("de-DE")}</td>
+      <td class="num"><button class="reset" data-card="${escHtml(c.card)}">Reset</button></td>`;
     tb.appendChild(tr);
   });
   $("leer").style.display = cards.length? "none":"block";
@@ -191,6 +200,37 @@ $("keyInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnLogin").
 $("btnRefresh").addEventListener("click",()=>{
   const k=localStorage.getItem("wk_admin_key"); if(k) start(k);
 });
+
+/* ---------- Reset ---------- */
+function lokalLoeschen(card){
+  // Falls du im selben Browser testest: „schon eingetragen"-Merker & Demo-Cache weg
+  try{ localStorage.removeItem("wk_done_"+card); localStorage.removeItem("wk_"+card); }catch{}
+}
+async function resetCard(card){
+  const key=localStorage.getItem("wk_admin_key");
+  if(!confirm(`Reise „${card}" wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+  try{
+    const r=await fetch(`${BACKEND_URL}/reset?c=${encodeURIComponent(card)}`,{method:"POST",headers:{"X-Admin-Key":key}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    lokalLoeschen(card);
+    start(key);
+  }catch(e){ alert("Reset fehlgeschlagen: "+e.message); }
+}
+async function resetAll(){
+  const key=localStorage.getItem("wk_admin_key");
+  if(!confirm("ALLE Reisen löschen? Wirklich alles?")) return;
+  try{
+    const r=await fetch(`${BACKEND_URL}/reset?all=1`,{method:"POST",headers:{"X-Admin-Key":key}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    try{ Object.keys(localStorage).filter(k=>k.startsWith("wk_done_")||/^wk_[^a]/.test(k)).forEach(k=>localStorage.removeItem(k)); }catch{}
+    start(key);
+  }catch(e){ alert("Reset fehlgeschlagen: "+e.message); }
+}
+$("tbody").addEventListener("click",e=>{
+  const b=e.target.closest(".reset");
+  if(b) resetCard(b.dataset.card);
+});
+$("btnResetAll").addEventListener("click",resetAll);
 
 /* Auto-Login: ?key=… in URL, sonst gespeicherter Schlüssel */
 (function(){
