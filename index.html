@@ -85,10 +85,16 @@
   .chip{font-family:"Space Mono",monospace; font-size:12px; color:var(--customs); background:#eef4ee; border:1px solid var(--customs); border-radius:20px; padding:5px 10px; cursor:pointer}
   .chip:active{background:var(--customs); color:#fff}
   .chips .k{width:100%; font-size:11px; color:var(--muted); font-family:"Space Mono",monospace; letter-spacing:.08em}
+  .regeln{font-size:11.5px; line-height:1.4; color:var(--muted); margin-top:9px}
 
   .check{display:flex; gap:10px; align-items:flex-start; margin-top:4px; cursor:pointer}
   .check input{width:20px; height:20px; margin-top:1px; accent-color:var(--stamp); flex-shrink:0}
   .check span{font-size:13.5px; line-height:1.4; color:var(--ink)}
+  .fotobtn{width:100%; font-size:15px; font-weight:700; font-family:inherit; background:#fffdf7; border:2px dashed var(--line); border-radius:9px; padding:12px; cursor:pointer; color:var(--ink)}
+  .fotobtn:active{background:#eef4ee}
+  .fotovorschau{display:none; align-items:center; gap:10px; margin-top:8px; border:1.5px solid var(--line); border-radius:9px; padding:8px; background:#fffdf7}
+  .fotovorschau img{width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid var(--line)}
+  .fotovorschau button{margin-left:auto; font-family:inherit; font-weight:700; background:none; border:1.5px solid var(--line); border-radius:7px; padding:6px 10px; cursor:pointer}
   .privat{display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line)}
   .hinweis{font-size:12px; color:var(--muted); line-height:1.45; margin-top:10px}
   .fehler{display:none; margin-top:12px; font-size:14px; font-weight:600; color:var(--stamp); text-align:center}
@@ -113,6 +119,8 @@
   .weitergeben .t{font-family:"Oswald",sans-serif; text-transform:uppercase; font-size:18px; letter-spacing:.04em; color:var(--gold)}
   .weitergeben p{font-size:14px; line-height:1.5; margin-top:8px; color:#e7e0cd}
   .weitergeben p b{color:#fff}
+  .weitergeben .insta{margin-top:12px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.18);font-size:13.5px;line-height:1.45;color:#e7e0cd}
+  .weitergeben .insta a{color:var(--gold);font-weight:700;text-decoration:none}
 
   .demo{display:none; text-align:center; font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); border:1px dashed var(--gold); border-radius:8px; padding:8px; margin-bottom:16px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -153,13 +161,21 @@
         <label id="t_labelTipp"></label>
         <textarea id="fTipp" maxlength="200" rows="2"></textarea>
         <div class="chips" id="naheChips"></div>
+        <p class="regeln" id="t_regeln"></p>
       </div>
 
       <label class="check"><input type="checkbox" id="chkVerraten"><span id="t_check"></span></label>
 
       <div class="privat" id="privatFelder">
         <div class="feld"><label id="t_labelName"></label><input type="text" id="fName" autocomplete="off"></div>
-        <div class="feld" style="margin-bottom:0"><label id="t_labelSocials"></label><input type="text" id="fSocial" placeholder="@instagram, TikTok …" autocomplete="off"></div>
+        <div class="feld"><label id="t_labelSocials"></label><input type="text" id="fSocial" placeholder="@instagram, TikTok …" autocomplete="off"></div>
+        <div class="feld" style="margin-bottom:12px">
+          <label id="t_labelFoto"></label>
+          <input type="file" id="fotoInput" accept="image/*" style="display:none">
+          <button type="button" class="fotobtn" id="fotoBtn"></button>
+          <div class="fotovorschau" id="fotoVorschau"><img id="fotoBild" alt=""><button type="button" id="fotoEntfernen">✕</button></div>
+        </div>
+        <label class="check"><input type="checkbox" id="chkInsta"><span id="t_consentInsta"></span></label>
       </div>
 
       <div class="hr"></div>
@@ -177,6 +193,7 @@
       <div class="weitergeben">
         <div class="t" id="t_weiterTitle"></div>
         <p id="t_weiterText"></p>
+        <p class="insta" id="t_insta"></p>
       </div>
       <button class="ghost" id="btnReload" style="margin-top:16px"></button>
     </section>
@@ -190,7 +207,7 @@
 /* ================= KONFIGURATION ================= */
 const CONFIG = {
   BACKEND_URL: "https://olfbert.o36277822.workers.dev",   // dein Worker
-  NTFY_TOPIC:  "kartenreise-olfbert-x7k2q9",
+  NTFY_TOPIC:  "kartenreise-HIER-AENDERN-x7k2q9",
   NTFY_SERVER: "https://ntfy.sh",
   MAP_START: [51.0, 10.0], MAP_ZOOM: 4
 };
@@ -203,7 +220,7 @@ const i18n = {
     btnMitmachen:"Meinen Punkt setzen", btnNurSchauen:"Nur die bisherige Reise ansehen",
     eyebrowForm:"Deine Station", h1Form:"Wo bist du<br>gerade?",
     leadForm:"Für die Reise zählt nur <b>ein grober Ort</b> und das Datum. Mehr wird öffentlich nicht gezeigt.",
-    labelOrt:"Dein Standort für die Karte", ortErmittelt:"Wird ermittelt…", ortSub:"ca. 250 m genau",
+    labelOrt:"Dein Standort für die Karte", ortErmittelt:"Wird ermittelt…", ortSub:"ca. 100 m genau",
     btnGPS:"📍 genauer", ortNichtGefunden:"Ort nicht gefunden.", ortNichtGefundenSub:"Tippe auf „genauer“", unbekannterOrt:"Unbekannter Ort",
     labelTipp:"Dein Tipp für alle nach dir", tippOpt:"(optional, öffentlich)",
     tippPlaceholder:"z.B. „Die Pizza im Da Mario ist ein Traum“ oder ein Gruß …",
@@ -211,11 +228,11 @@ const i18n = {
     check:"Der Besitzer der Karte darf wissen, wer ich bin. <b>Nur er</b> bekommt das per Push — es steht nirgends öffentlich.",
     labelName:"Name", namePlaceholder:"Wie heißt du?", labelSocials:"Socials", socialsOpt:"(optional)",
     btnEintragen:"Eintragen & Reise ansehen", btnEintragenBusy:"Wird eingetragen…", btnZurueck:"Abbrechen",
-    hinweis:"Kein Konto, kein Tracking. Für die öffentliche Reise wird dein Ort auf ~250 m gerundet gespeichert.",
+    hinweis:"Kein Konto, kein Tracking. Für die öffentliche Reise wird dein Ort auf ~100 m gerundet gespeichert.",
     errNoOrt:"Ohne Ort keine Station — tippe auf „genauer“ oder erlaube den Standort.", errFail:"Hat nicht geklappt: ", errCooldown:"Zu schnell — kurz warten und nochmal.",
     eyebrowReise:"Die bisherige Reise", stSing:"Station", stPlur:"Stationen", statSuffix:"bisher", statEmpty:"Noch keine Station — du wärst die erste.", popupStation:"Station",
     weiterTitle:"Jetzt bist du dran", weiterText:"Gib die Karte <b>weiter</b> — am liebsten an jemanden, den du <b>nicht</b> kennst. Sag nur: „Scan das, trag dich ein, gib sie weiter.“ Je fremder die Hände, desto weiter reist sie.",
-    btnReload:"Reise aktualisieren", ladeFehler:"Reise konnte nicht geladen werden." },
+    btnReload:"Reise aktualisieren", ladeFehler:"Reise konnte nicht geladen werden.", insta:"Folge <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> auf Instagram — wer sich einträgt, kann dort verlinkt werden.", labelFoto:"Foto (optional)", fotoAdd:"📷 Foto anhängen", consentInsta:"Einverstanden, dass mein Eintrag auf @die_karte_reist gepostet werden darf.", regeln:"Bitte nichts Gesetzwidriges und keine personenbezogenen Daten anderer ohne deren Einverständnis — sonst wird der Eintrag entfernt." },
 
   en:{ _name:"EN", locale:"en-GB",
     eyebrow:"The card's passport", h1a:"Congratulations —", h1b:"you're in.", stempelLabel:"Stop No.",
@@ -223,7 +240,7 @@ const i18n = {
     btnMitmachen:"Drop my point", btnNurSchauen:"Just view the journey so far",
     eyebrowForm:"Your stop", h1Form:"Where are<br>you now?",
     leadForm:"For the journey only <b>a rough location</b> and the date matter. Nothing more is shown publicly.",
-    labelOrt:"Your location for the map", ortErmittelt:"Detecting…", ortSub:"approx. 250 m accurate",
+    labelOrt:"Your location for the map", ortErmittelt:"Detecting…", ortSub:"approx. 100 m accurate",
     btnGPS:"📍 precise", ortNichtGefunden:"Location not found.", ortNichtGefundenSub:'Tap “precise”', unbekannterOrt:"Unknown place",
     labelTipp:"Your tip for everyone after you", tippOpt:"(optional, public)",
     tippPlaceholder:'e.g. “The pizza at Da Mario is a dream” or a quick hello …',
@@ -231,11 +248,11 @@ const i18n = {
     check:"The card's owner may know who I am. <b>Only they</b> get it via push — it's never shown publicly.",
     labelName:"Name", namePlaceholder:"What's your name?", labelSocials:"Socials", socialsOpt:"(optional)",
     btnEintragen:"Add & view journey", btnEintragenBusy:"Adding…", btnZurueck:"Cancel",
-    hinweis:"No account, no tracking. For the public journey your location is rounded to ~250 m.",
+    hinweis:"No account, no tracking. For the public journey your location is rounded to ~100 m.",
     errNoOrt:'No location, no stop — tap “precise” or allow location access.', errFail:"Didn't work: ", errCooldown:"Too fast — wait a moment and try again.",
     eyebrowReise:"The journey so far", stSing:"stop", stPlur:"stops", statSuffix:"so far", statEmpty:"No stops yet — you'd be the first.", popupStation:"Stop",
     weiterTitle:"Now it's your turn", weiterText:"Pass the card <b>on</b> — ideally to someone you <b>don't</b> know. Just say: “Scan this, add yourself, pass it on.” The more unfamiliar the hands, the further it travels.",
-    btnReload:"Refresh journey", ladeFehler:"Couldn't load the journey." },
+    btnReload:"Refresh journey", ladeFehler:"Couldn't load the journey.", insta:"Follow <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> on Instagram — anyone who signs up can be tagged there.", labelFoto:"Photo (optional)", fotoAdd:"📷 Add photo", consentInsta:"I agree that my entry may be posted on @die_karte_reist.", regeln:"Please nothing illegal and no personal data of others without their consent — otherwise the entry will be removed." },
 
   fr:{ _name:"FR", locale:"fr-FR",
     eyebrow:"Passeport de la carte", h1a:"Félicitations —", h1b:"tu en fais partie.", stempelLabel:"Étape n°",
@@ -243,7 +260,7 @@ const i18n = {
     btnMitmachen:"Ajouter mon point", btnNurSchauen:"Voir seulement le trajet jusqu'ici",
     eyebrowForm:"Ton étape", h1Form:"Où es-tu<br>maintenant ?",
     leadForm:"Pour le trajet, seuls <b>un lieu approximatif</b> et la date comptent. Rien d'autre n'est affiché publiquement.",
-    labelOrt:"Ta position pour la carte", ortErmittelt:"Localisation…", ortSub:"précision ~250 m",
+    labelOrt:"Ta position pour la carte", ortErmittelt:"Localisation…", ortSub:"précision ~100 m",
     btnGPS:"📍 précis", ortNichtGefunden:"Lieu introuvable.", ortNichtGefundenSub:"Touche « précis »", unbekannterOrt:"Lieu inconnu",
     labelTipp:"Ton conseil pour les suivants", tippOpt:"(facultatif, public)",
     tippPlaceholder:"p.ex. « La pizza chez Da Mario est un rêve » ou un petit mot …",
@@ -251,11 +268,11 @@ const i18n = {
     check:"Le propriétaire de la carte peut savoir qui je suis. <b>Lui seul</b> le reçoit par notification — jamais affiché publiquement.",
     labelName:"Nom", namePlaceholder:"Comment t'appelles-tu ?", labelSocials:"Réseaux", socialsOpt:"(facultatif)",
     btnEintragen:"Ajouter & voir le trajet", btnEintragenBusy:"Ajout…", btnZurueck:"Annuler",
-    hinweis:"Pas de compte, pas de pistage. Pour le trajet public, ta position est arrondie à ~250 m.",
+    hinweis:"Pas de compte, pas de pistage. Pour le trajet public, ta position est arrondie à ~100 m.",
     errNoOrt:"Pas de lieu, pas d'étape — touche « précis » ou autorise la localisation.", errFail:"Échec : ", errCooldown:"Trop vite — attends un instant et réessaie.",
     eyebrowReise:"Le trajet jusqu'ici", stSing:"étape", stPlur:"étapes", statSuffix:"jusqu'ici", statEmpty:"Aucune étape encore — tu serais le premier.", popupStation:"Étape",
     weiterTitle:"À toi de jouer", weiterText:"Transmets la carte <b>plus loin</b> — de préférence à quelqu'un que tu <b>ne connais pas</b>. Dis simplement : « Scanne, inscris-toi, transmets. » Plus les mains sont inconnues, plus elle voyage loin.",
-    btnReload:"Actualiser le trajet", ladeFehler:"Impossible de charger le trajet." },
+    btnReload:"Actualiser le trajet", ladeFehler:"Impossible de charger le trajet.", insta:"Suis <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> sur Instagram — toute personne inscrite peut y être identifiée.", labelFoto:"Photo (facultatif)", fotoAdd:"📷 Ajouter une photo", consentInsta:"J'accepte que ma participation soit publiée sur @die_karte_reist.", regeln:"Rien d'illégal, et aucune donnée personnelle de tiers sans leur accord — sinon l'entrée sera supprimée." },
 
   es:{ _name:"ES", locale:"es-ES",
     eyebrow:"Pasaporte de la tarjeta", h1a:"¡Enhorabuena! —", h1b:"estás dentro.", stempelLabel:"Parada n.º",
@@ -263,7 +280,7 @@ const i18n = {
     btnMitmachen:"Marcar mi punto", btnNurSchauen:"Solo ver el viaje hasta ahora",
     eyebrowForm:"Tu parada", h1Form:"¿Dónde estás<br>ahora?",
     leadForm:"Para el viaje solo cuentan <b>una ubicación aproximada</b> y la fecha. No se muestra nada más públicamente.",
-    labelOrt:"Tu ubicación para el mapa", ortErmittelt:"Detectando…", ortSub:"precisión ~250 m",
+    labelOrt:"Tu ubicación para el mapa", ortErmittelt:"Detectando…", ortSub:"precisión ~100 m",
     btnGPS:"📍 preciso", ortNichtGefunden:"Ubicación no encontrada.", ortNichtGefundenSub:'Toca “preciso”', unbekannterOrt:"Lugar desconocido",
     labelTipp:"Tu consejo para los que vengan después", tippOpt:"(opcional, público)",
     tippPlaceholder:'p.ej. “La pizza de Da Mario es un sueño” o un saludo …',
@@ -271,11 +288,11 @@ const i18n = {
     check:"El dueño de la tarjeta puede saber quién soy. <b>Solo él</b> lo recibe por notificación — nunca se muestra públicamente.",
     labelName:"Nombre", namePlaceholder:"¿Cómo te llamas?", labelSocials:"Redes", socialsOpt:"(opcional)",
     btnEintragen:"Añadir y ver el viaje", btnEintragenBusy:"Añadiendo…", btnZurueck:"Cancelar",
-    hinweis:"Sin cuenta, sin rastreo. Para el viaje público tu ubicación se redondea a ~250 m.",
+    hinweis:"Sin cuenta, sin rastreo. Para el viaje público tu ubicación se redondea a ~100 m.",
     errNoOrt:'Sin ubicación no hay parada — toca “preciso” o permite la ubicación.', errFail:"No funcionó: ", errCooldown:"Demasiado rápido — espera un momento e inténtalo de nuevo.",
     eyebrowReise:"El viaje hasta ahora", stSing:"parada", stPlur:"paradas", statSuffix:"hasta ahora", statEmpty:"Aún no hay paradas — serías el primero.", popupStation:"Parada",
     weiterTitle:"Ahora te toca a ti", weiterText:"Pasa la tarjeta <b>a otra persona</b> — preferiblemente a alguien que <b>no</b> conoces. Solo di: «Escanéala, apúntate, pásala». Cuanto más desconocidas las manos, más lejos viaja.",
-    btnReload:"Actualizar el viaje", ladeFehler:"No se pudo cargar el viaje." },
+    btnReload:"Actualizar el viaje", ladeFehler:"No se pudo cargar el viaje.", insta:"Sigue <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> en Instagram — quien se apunte puede ser etiquetado allí.", labelFoto:"Foto (opcional)", fotoAdd:"📷 Añadir foto", consentInsta:"Acepto que mi participación se publique en @die_karte_reist.", regeln:"Nada ilegal ni datos personales de otras personas sin su consentimiento — si no, la entrada se eliminará." },
 
   it:{ _name:"IT", locale:"it-IT",
     eyebrow:"Passaporto della carta", h1a:"Complimenti —", h1b:"ci sei anche tu.", stempelLabel:"Tappa n°",
@@ -283,7 +300,7 @@ const i18n = {
     btnMitmachen:"Segna il mio punto", btnNurSchauen:"Vedi solo il viaggio finora",
     eyebrowForm:"La tua tappa", h1Form:"Dove ti trovi<br>ora?",
     leadForm:"Per il viaggio contano solo <b>una posizione approssimativa</b> e la data. Niente altro è pubblico.",
-    labelOrt:"La tua posizione per la mappa", ortErmittelt:"Rilevamento…", ortSub:"precisione ~250 m",
+    labelOrt:"La tua posizione per la mappa", ortErmittelt:"Rilevamento…", ortSub:"precisione ~100 m",
     btnGPS:"📍 preciso", ortNichtGefunden:"Posizione non trovata.", ortNichtGefundenSub:'Tocca “preciso”', unbekannterOrt:"Luogo sconosciuto",
     labelTipp:"Il tuo consiglio per chi viene dopo", tippOpt:"(facoltativo, pubblico)",
     tippPlaceholder:'es. “La pizza da Da Mario è un sogno” o un saluto …',
@@ -291,11 +308,11 @@ const i18n = {
     check:"Il proprietario della carta può sapere chi sono. <b>Solo lui</b> lo riceve via push — non è mai pubblico.",
     labelName:"Nome", namePlaceholder:"Come ti chiami?", labelSocials:"Social", socialsOpt:"(facoltativo)",
     btnEintragen:"Aggiungi e vedi il viaggio", btnEintragenBusy:"Aggiungo…", btnZurueck:"Annulla",
-    hinweis:"Nessun account, nessun tracciamento. Per il viaggio pubblico la posizione è arrotondata a ~250 m.",
+    hinweis:"Nessun account, nessun tracciamento. Per il viaggio pubblico la posizione è arrotondata a ~100 m.",
     errNoOrt:'Senza posizione niente tappa — tocca “preciso” o consenti la posizione.', errFail:"Non ha funzionato: ", errCooldown:"Troppo veloce — aspetta un attimo e riprova.",
     eyebrowReise:"Il viaggio finora", stSing:"tappa", stPlur:"tappe", statSuffix:"finora", statEmpty:"Ancora nessuna tappa — saresti il primo.", popupStation:"Tappa",
     weiterTitle:"Ora tocca a te", weiterText:"Passa la carta <b>avanti</b> — meglio a qualcuno che <b>non</b> conosci. Basta dire: «Scansiona, iscriviti, passala». Più le mani sono sconosciute, più lontano viaggia.",
-    btnReload:"Aggiorna il viaggio", ladeFehler:"Impossibile caricare il viaggio." },
+    btnReload:"Aggiorna il viaggio", ladeFehler:"Impossibile caricare il viaggio.", insta:"Segui <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> su Instagram — chi si iscrive può essere taggato lì.", labelFoto:"Foto (facoltativa)", fotoAdd:"📷 Aggiungi foto", consentInsta:"Acconsento che il mio contributo venga pubblicato su @die_karte_reist.", regeln:"Niente di illegale e nessun dato personale altrui senza consenso — altrimenti la voce verrà rimossa." },
 
   nl:{ _name:"NL", locale:"nl-NL",
     eyebrow:"Paspoort van de kaart", h1a:"Gefeliciteerd —", h1b:"je doet mee.", stempelLabel:"Halte nr.",
@@ -303,7 +320,7 @@ const i18n = {
     btnMitmachen:"Mijn punt zetten", btnNurSchauen:"Alleen de reis tot nu toe bekijken",
     eyebrowForm:"Jouw halte", h1Form:"Waar ben je<br>nu?",
     leadForm:"Voor de reis tellen alleen <b>een grove locatie</b> en de datum. Meer wordt niet openbaar getoond.",
-    labelOrt:"Jouw locatie voor de kaart", ortErmittelt:"Bezig…", ortSub:"ca. 250 m nauwkeurig",
+    labelOrt:"Jouw locatie voor de kaart", ortErmittelt:"Bezig…", ortSub:"ca. 100 m nauwkeurig",
     btnGPS:"📍 preciezer", ortNichtGefunden:"Locatie niet gevonden.", ortNichtGefundenSub:'Tik op “preciezer”', unbekannterOrt:"Onbekende plek",
     labelTipp:"Jouw tip voor iedereen na jou", tippOpt:"(optioneel, openbaar)",
     tippPlaceholder:'bijv. “De pizza bij Da Mario is een droom” of een groet …',
@@ -311,11 +328,11 @@ const i18n = {
     check:"De eigenaar van de kaart mag weten wie ik ben. <b>Alleen hij</b> krijgt het via push — het staat nergens openbaar.",
     labelName:"Naam", namePlaceholder:"Hoe heet je?", labelSocials:"Socials", socialsOpt:"(optioneel)",
     btnEintragen:"Toevoegen & reis bekijken", btnEintragenBusy:"Bezig…", btnZurueck:"Annuleren",
-    hinweis:"Geen account, geen tracking. Voor de openbare reis wordt je locatie afgerond op ~250 m.",
+    hinweis:"Geen account, geen tracking. Voor de openbare reis wordt je locatie afgerond op ~100 m.",
     errNoOrt:'Zonder locatie geen halte — tik op “preciezer” of sta locatie toe.', errFail:"Mislukt: ", errCooldown:"Te snel — even wachten en opnieuw.",
     eyebrowReise:"De reis tot nu toe", stSing:"halte", stPlur:"haltes", statSuffix:"tot nu toe", statEmpty:"Nog geen haltes — jij zou de eerste zijn.", popupStation:"Halte",
     weiterTitle:"Nu ben jij", weiterText:"Geef de kaart <b>door</b> — het liefst aan iemand die je <b>niet</b> kent. Zeg gewoon: “Scan dit, vul jezelf in, geef door.” Hoe onbekender de handen, hoe verder hij reist.",
-    btnReload:"Reis vernieuwen", ladeFehler:"Kon de reis niet laden." },
+    btnReload:"Reis vernieuwen", ladeFehler:"Kon de reis niet laden.", insta:"Volg <a href='https://instagram.com/die_karte_reist' target='_blank' rel='noopener'>@die_karte_reist</a> op Instagram — wie zich inschrijft, kan daar getagd worden.", labelFoto:"Foto (optioneel)", fotoAdd:"📷 Foto toevoegen", consentInsta:"Ik ga ermee akkoord dat mijn bijdrage op @die_karte_reist geplaatst mag worden.", regeln:"Niets illegaals en geen persoonsgegevens van anderen zonder toestemming — anders wordt de inzending verwijderd." },
 };
 
 /* ================= STATE ================= */
@@ -323,7 +340,7 @@ const CARD = (new URLSearchParams(location.search).get("c") || "default").replac
 const DEMO = !CONFIG.BACKEND_URL;
 const $ = id => document.getElementById(id);
 const escHtml = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let meinOrt=null, mapObj=null, lastHops=null, currentView="start", lastNahe=[];
+let meinOrt=null, mapObj=null, lastHops=null, currentView="start", lastNahe=[], fotoDatei=null;
 
 let LANG = localStorage.getItem("wk_lang");
 if(!LANG || !i18n[LANG]){ const n=(navigator.language||"de").slice(0,2).toLowerCase(); LANG = i18n[n]?n:"de"; }
@@ -366,12 +383,17 @@ function applyLang(){
   $("t_labelName").textContent=T.labelName;
   $("fName").placeholder=T.namePlaceholder;
   $("t_labelSocials").innerHTML=`${T.labelSocials} <span class="opt">${T.socialsOpt}</span>`;
+  $("t_labelFoto").textContent=T.labelFoto;
+  $("fotoBtn").textContent=T.fotoAdd;
+  $("t_consentInsta").textContent=T.consentInsta;
+  $("t_regeln").textContent=T.regeln;
   $("btnEintragen").textContent=T.btnEintragen;
   $("btnZurueck").textContent=T.btnZurueck;
   $("t_hinweis").textContent=T.hinweis;
   $("t_eyebrowReise").textContent=T.eyebrowReise;
   $("t_weiterTitle").textContent=T.weiterTitle;
   $("t_weiterText").innerHTML=T.weiterText;
+  $("t_insta").innerHTML=T.insta;
   $("btnReload").textContent=T.btnReload;
   if(meinOrt!==null || currentView==="form") zeigeOrt();
   renderChips();
@@ -385,7 +407,7 @@ async function ladeReise(){
   if(!r.ok) throw new Error("GET "+r.status);
   return (await r.json()).hops||[];
 }
-const GRID=0.0025, raster=x=>Number((Math.round(x/GRID)*GRID).toFixed(5));
+const GRID=0.001, raster=x=>Number((Math.round(x/GRID)*GRID).toFixed(5));
 async function trageEin(ort,tipp){
   tipp=(tipp||"").trim().slice(0,200);
   if(DEMO){
@@ -440,9 +462,11 @@ async function naheOrteLaden(ort){
 }
 
 /* ================= ntfy ================= */
-async function pushAnBesitzer(name,social,ort){
-  const zeilen=["🗺️ Neue Station auf der Kartenreise!","",name?"👤 Name: "+name:"👤 (kein Name)",social?"📱 Socials: "+social:null,"📍 Ort: "+([ort.city,ort.country].filter(Boolean).join(", ")||"unbekannt")].filter(z=>z!==null);
-  try{ await fetch(`${CONFIG.NTFY_SERVER}/${CONFIG.NTFY_TOPIC}`,{method:"POST",body:zeilen.join("\n"),headers:{"X-Title":"Kartenreise","X-Tags":"round_pushpin"}}); }catch{}
+async function pushAnBesitzer(name,social,ort,consent){
+  const zeilen=["🗺️ Neue Station auf der Kartenreise!","",name?"👤 Name: "+name:"👤 (kein Name)",social?"📱 Socials: "+social:null,"📍 Ort: "+([ort.city,ort.country].filter(Boolean).join(", ")||"unbekannt"),consent?"📸 Insta-Freigabe: JA ✅":"📸 Insta-Freigabe: nein"].filter(z=>z!==null);
+  const url=`${CONFIG.NTFY_SERVER}/${CONFIG.NTFY_TOPIC}`;
+  try{ await fetch(url,{method:"POST",body:zeilen.join("\n"),headers:{"X-Title":"Kartenreise","X-Tags":"round_pushpin"}}); }catch{}
+  if(fotoDatei){ try{ const blob=await fotoKomprimieren(fotoDatei); await fetch(url,{method:"PUT",body:blob,headers:{"X-Filename":"foto.jpg","X-Title":consent?"Foto – Insta-Freigabe JA":"Foto – keine Insta-Freigabe","X-Tags":"camera_with_flash"}}); }catch{} }
 }
 
 /* ================= REISE ZEICHNEN ================= */
@@ -485,6 +509,10 @@ function zeigeReise(hops){
 function wechsel(v){ currentView=v; ["start","form","journey"].forEach(x=>$("view-"+x).style.display=(x===v?"block":"none")); window.scrollTo({top:0}); }
 
 $("chkVerraten").addEventListener("change",e=>{ $("privatFelder").style.display=e.target.checked?"block":"none"; });
+$("fotoBtn").addEventListener("click",()=>$("fotoInput").click());
+$("fotoInput").addEventListener("change",()=>{const f=$("fotoInput").files[0];if(!f)return;fotoDatei=f;$("fotoBild").src=URL.createObjectURL(f);$("fotoBtn").style.display="none";$("fotoVorschau").style.display="flex";});
+$("fotoEntfernen").addEventListener("click",()=>{fotoDatei=null;$("fotoInput").value="";$("fotoVorschau").style.display="none";$("fotoBtn").style.display="block";});
+function fotoKomprimieren(datei){return new Promise((res,rej)=>{const u=URL.createObjectURL(datei);const img=new Image();img.onload=()=>{const max=1280;let w=img.width,h=img.height;if(Math.max(w,h)>max){const f=max/Math.max(w,h);w=Math.round(w*f);h=Math.round(h*f);}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error("compress")),"image/jpeg",0.8);};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("img"));};img.src=u;});}
 $("btnGPS").addEventListener("click",async()=>{
   $("btnGPS").textContent="…";
   try{ const g=await gpsPos(); const label=await reverseGeo(g.lat,g.lon); meinOrt={lat:g.lat,lon:g.lon,city:(label&&label.city)||(meinOrt&&meinOrt.city)||"",country:(label&&label.country)||(meinOrt&&meinOrt.country)||""}; }catch{}
@@ -500,7 +528,7 @@ $("btnEintragen").addEventListener("click",async()=>{
   const btn=$("btnEintragen"); btn.disabled=true; btn.textContent=T.btnEintragenBusy;
   try{
     const hops=await trageEin(meinOrt,$("fTipp").value);
-    if($("chkVerraten").checked) await pushAnBesitzer($("fName").value.trim(),$("fSocial").value.trim(),meinOrt);
+    if($("chkVerraten").checked) await pushAnBesitzer($("fName").value.trim(),$("fSocial").value.trim(),meinOrt,$("chkInsta").checked);
     try{ localStorage.setItem("wk_done_"+CARD,"1"); }catch{}
     zeigeReise(hops);
   }catch(e){ btn.disabled=false; btn.textContent=T.btnEintragen; fehler.textContent=T.errFail+e.message; fehler.style.display="block"; }
