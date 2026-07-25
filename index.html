@@ -466,7 +466,7 @@ async function pushAnBesitzer(name,social,ort,consent){
   const zeilen=["🗺️ Neue Station auf der Kartenreise!","",name?"👤 Name: "+name:"👤 (kein Name)",social?"📱 Socials: "+social:null,"📍 Ort: "+([ort.city,ort.country].filter(Boolean).join(", ")||"unbekannt"),consent?"📸 Insta-Freigabe: JA ✅":"📸 Insta-Freigabe: nein"].filter(z=>z!==null);
   const url=`${CONFIG.NTFY_SERVER}/${CONFIG.NTFY_TOPIC}`;
   try{ await fetch(url,{method:"POST",body:zeilen.join("\n"),headers:{"X-Title":"Kartenreise","X-Tags":"round_pushpin"}}); }catch{}
-  if(fotoDatei){ try{ const blob=await fotoKomprimieren(fotoDatei); await fetch(url,{method:"PUT",body:blob,headers:{"X-Filename":"foto.jpg","X-Title":consent?"Foto – Insta-Freigabe JA":"Foto – keine Insta-Freigabe","X-Tags":"camera_with_flash"}}); }catch{} }
+  if(fotoDatei){ try{ const blob=await fotoKomprimieren(fotoDatei); await fetch(url,{method:"PUT",body:blob,headers:{"X-Filename":"foto.jpg","X-Title":consent?"Foto (Insta-Freigabe JA)":"Foto (keine Insta-Freigabe)","X-Tags":"camera_with_flash"}}); }catch{} }
 }
 
 /* ================= REISE ZEICHNEN ================= */
